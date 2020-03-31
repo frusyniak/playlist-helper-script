@@ -9,7 +9,7 @@ import csv
 import logging
 
 logging.basicConfig(
-    filename='log_csv_handler.log',
+    filename='./log_csv_handler.log',
     filemode='w',
     level='INFO'
 )

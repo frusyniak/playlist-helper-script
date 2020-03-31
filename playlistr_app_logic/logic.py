@@ -1,12 +1,13 @@
 import shelve
 import requests
 
-from handle_csv import CsvHandler
-from data_custodian import LyricObject, CommandLineHelper
-from secrets import Secrets
+from ._data_custodian import CommandLineHelper
+from ._handle_csv import CsvHandler
+from ._lyric import LyricObject
+from .secrets import Secrets
 
 
-class ScriptRunner(CsvHandler):
+class Driver(CsvHandler):
     def __init__(self, csv_path):
         """
         Note: self.lyrics is a list of lyric objects. There is one
@@ -138,7 +139,7 @@ class ScriptRunner(CsvHandler):
 
     def get_good_track_ids(self):
 
-        DEBUG_READ_SHELF = True
+        DEBUG_READ_SHELF = False
         DEBUG_WRITE_SHELF = False
 
         """
@@ -183,7 +184,7 @@ class ScriptRunner(CsvHandler):
                 'apikey': self.secrets.lyric_key,
                 'q_track': song,
                 'q_artist': artist,
-                'f_has_lyrics': True  # filter: must have lyrics
+                'f_has_lyrics': True
             }
             response = requests.get(
                 self.secrets.search,
