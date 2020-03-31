@@ -8,30 +8,48 @@ from secrets import Secrets
 
 class ScriptRunner(CsvHandler):
     def __init__(self, csv_path):
-
+        """
+        Note: self.lyrics is a list of lyric objects. There is one
+        for each song.
+        """
+        # business as usual
         super().__init__(csv_path)
         self.secrets = Secrets()
-        self.lyrics = ScriptRunner.get_lyrics(self)
 
-    def get_lyrics(self):
+
         """
-        This is the master function which initiates a function chain:
-            * get track id's
-            * pop tracks initially identified as explicit right away
-            *
-            * check cache
-            * pull lyrics from cache, if possible
-            * otherwise get lyrics from api
-            *
-        """
-        self.get_good_track_ids()
-        """
-        Now, these are defined:
+        this function does a lot. It initiates a long chain of function
+        calls which ultimately define the following attributes:
+
             self.good_ids
             self.no_id_found
             self.explicit_tracks
         """
+        self.get_good_track_ids()
+
+        self.regular_lyrics = self.get_regular_lyric_objects()
+        self.explicit_lyrics = self.get_explicit_lyrics()
+        self.blank_lyrics = self.get_blank_lyrics()
+        breakpoint()
+
+    def command_line_sequence(self):
+        for inst in lyric_objects:
+            c = lambda s: s.center((80-len(s)), '=') + '\n\n'
+            print(c('SONG'), inst.song, '\n', inst.student_song_entry)
+            input()
+            print(c('ARTIST'), inst.artist, '\n', inst.student_artist_entry)
+            input()
+            print(c('LYRICS'), inst.lyrics)
+            input()
+
+    def get_regular_lyric_objects(self):
+        """
+        This fucntion gets lyric objects for the regular tunes that have
+        not presented an issue thus far!!
+        """
         lyric_objects = []
+
+        # populate lyric_objects
         for index, item in enumerate(self.good_ids):
             # unpack tuple and track_id
             student_entries, api_info = item
@@ -58,22 +76,78 @@ class ScriptRunner(CsvHandler):
 
             lyric_objects.append(
                 LyricObject(
+                    student_entries,
                     api_info,
                     lyric_dict,
-                    student_entries
                 )
             )
 
-        breakpoint()
 
+        return lyric_objects
 
+    def get_blank_lyrics(self):
+        """
+        All this does is makes an instance of a lyrics object for each
+        song that failed to return results from the api. The most likely
+        cause for this case is a student typo, which is definitely not
+        going to be an uncommon case!
+        """
+        empty_lyric_objects = []
+        for index, item in enumerate(self.no_id_found):
+            # unpack tuple and track_id
+            student_entries, api_info = item
+            print(student_entries)
+            empty_lyric_objects.append(LyricObject(student_entries))
 
+        return empty_lyric_objects
 
+    def get_explicit_lyrics(self):
 
-        return None # make sure you return something back to the init
+        explicit_lyric_objects = []
+        # populate explicit_lyric_objects
+        for index, item in enumerate(self.explicit_tracks):
+            # unpack tuple and track_id
+            student_entries, api_info = item
+            track_id = api_info['track_id']
+
+            if not self.lyrics_are_cached(track_id):
+                # make request
+                request_parameters = {
+                    'apikey': self.secrets.lyric_key,
+                    'track_id': track_id
+                }
+                response = requests.get(
+                    self.secrets.get_lyrics,
+                    params=request_parameters,
+                )
+                print(f'accessed api {index} times for lyrics')
+                lyric_dict = response.json()['message']['body']['lyrics']
+                lyrics = lyric_dict['lyrics_body']
+                self.write_to_cache(track_id, lyric_dict)
+
+            if self.lyrics_are_cached(track_id):
+                lyric_dict = self.read_from_cache(track_id)
+                lyrics = lyric_dict['lyrics_body']
+
+            explicit_lyric_objects.append(
+                LyricObject(
+                    student_entries,
+                    api_info,
+                    lyric_dict,
+                    explicit=True
+                )
+            )
+
+        return explicit_lyric_objects
 
     def get_good_track_ids(self):
+
+        DEBUG_READ_SHELF = True
+        DEBUG_WRITE_SHELF = False
+
         """
+        BOTH ABOVE VARIABLES SHOULD ALWAYS BE FALSE EXCEPT FOR DEBUGGING
+
         * In the "parse resposne section," I only take the first
             result of the api response, because responses are ranked
             by popularity, adn the first is the most popular.
@@ -92,9 +166,13 @@ class ScriptRunner(CsvHandler):
 
         * found_nothing and explicit_tracks are both just
             popped tuples, and the api data is abandoned behind.
+
+        * thought for the future: maybe you can depend on the cached
+            original api requests, and only update them if the api
+            ever returns an error. Those song id's and other metadata
+            probably never really changes.
         """
-        DEBUG_READ_SHELF = True # skip api requests, and use shelve if the is known to have all api data
-        DEBUG_WRITE_SHELF = False
+
         found_nothing = []
         found_something = []
         explicit_tracks = []
@@ -190,8 +268,6 @@ class ScriptRunner(CsvHandler):
         """
         with shelve.open('resources_cache') as db:
             lyric_dict = db[str(track_id)]
-
-        assert lyric_dict['explicit'] == 0
 
         return lyric_dict
 
