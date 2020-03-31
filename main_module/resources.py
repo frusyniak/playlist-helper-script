@@ -1,8 +1,9 @@
 import shelve
 import requests
 
-from secrets import Secrets
 from handle_csv import CsvHandler
+from lyric_object import LyricObject
+from secrets import Secrets
 
 
 class ScriptRunner(CsvHandler):
@@ -23,31 +24,51 @@ class ScriptRunner(CsvHandler):
             * otherwise get lyrics from api
             *
         """
-
         self.get_good_track_ids()
-
         """
         Now, these are defined:
             self.good_ids
             self.no_id_found
             self.explicit_tracks
         """
-        lyrics = []
-        for item in self.good_ids:
-            t, api_info = item
+        lyric_objects = []
+        for index, item in enumerate(self.good_ids):
+            # unpack tuple and track_id
+            student_entries, api_info = item
+            track_id = api_info['track_id']
 
-            # make request
-            request_parameters = {
-                'apikey': self.secrets.lyric_key,
-                'track_id': api_info['track_id']
-            }
-            response = requests.get(
-                self.secrets.get_lyrics,
-                params=request_parameters,
+            if not self.lyrics_are_cached(track_id):
+                # make request
+                request_parameters = {
+                    'apikey': self.secrets.lyric_key,
+                    'track_id': track_id
+                }
+                response = requests.get(
+                    self.secrets.get_lyrics,
+                    params=request_parameters,
+                )
+                print(f'accessed api {index} times for lyrics')
+                lyric_dict = response.json()['message']['body']['lyrics']
+                lyrics = lyric_dict['lyrics_body']
+                self.write_to_cache(track_id, lyric_dict)
+
+            if self.lyrics_are_cached(track_id):
+                lyric_dict = self.read_from_cache(track_id)
+                lyrics = lyric_dict['lyrics_body']
+
+            lyric_objects.append(
+                LyricObject(
+                    api_info,
+                    lyric_dict,
+                    student_entries
+                )
             )
-            lyric_dict = response.json()['message']['body']['lyrics']
-            lyrics = lyric_dict['lyrics_body']
-            breakpoint()
+
+        breakpoint()
+
+
+
+
 
         return None # make sure you return something back to the init
 
@@ -94,7 +115,7 @@ class ScriptRunner(CsvHandler):
                 self.secrets.search,
                 params=request_parameters,
             )
-            print(f'made request {index} times')
+            print(f'accessed api {index} times for info')
 
             # parse response
             resp_content: dict = response.json()
@@ -145,20 +166,36 @@ class ScriptRunner(CsvHandler):
         """
         with shelve.open('resources_cache') as db:
             try:
-                db[track_id]
+                db[str(track_id)]
                 cached = True
             except KeyError:
                 cached = False
 
         return cached
 
-    def write_to_cache(self, result_list):
+    def write_to_cache(self, track_id, lyric_dict):
         """
         Adds new lyrics to the cache if they are not there already.
+
+        This is extremely inefficient but idc.
+        """
+        with shelve.open('resources_cache', writeback=True) as db:
+            db[str(track_id)] = lyric_dict
+
+    def read_from_cache(self, track_id):
+        """
+        Reads api_info and lyric_dict from cache.
+
+        This is extremely inefficient but idc.
         """
         with shelve.open('resources_cache') as db:
-            for csv_data, api_data in result_list:
-                pass
+            lyric_dict = db[str(track_id)]
+
+        assert lyric_dict['explicit'] == 0
+
+        return lyric_dict
+
+
 
 
 
