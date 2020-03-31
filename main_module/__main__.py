@@ -11,4 +11,3 @@ if inp == '':
 
 
 runner = ScriptRunner(inp)
-runner.get_lyrics()

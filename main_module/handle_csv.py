@@ -1,3 +1,10 @@
+"""
+A general purpose script for pulling all rows, but only certain columns
+out of a csv.
+
+You should turn this into a module some day.
+"""
+
 import csv
 import logging
 
