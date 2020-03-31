@@ -33,6 +33,11 @@ class ScriptRunner(CsvHandler):
 
     def command_line_sequence(self):
         chelp = CommandLineHelper()
+        chelp.regular_lyrics(self.regular_lyrics)
+        chelp.explicit_lyrics(self.explicit_lyrics)
+        chelp.blank_lyrics(self.blank_lyrics)
+        chelp.write_txt_cuz_were_done()
+        chelp.regular_lyrics(self.regular_lyrics)
 
     def get_regular_lyric_objects(self):
         """
