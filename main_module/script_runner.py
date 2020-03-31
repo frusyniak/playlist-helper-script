@@ -2,7 +2,7 @@ import shelve
 import requests
 
 from handle_csv import CsvHandler
-from lyric_object import LyricObject
+from data_custodian import LyricObject, CommandLineHelper
 from secrets import Secrets
 
 
@@ -30,17 +30,9 @@ class ScriptRunner(CsvHandler):
         self.regular_lyrics = self.get_regular_lyric_objects()
         self.explicit_lyrics = self.get_explicit_lyrics()
         self.blank_lyrics = self.get_blank_lyrics()
-        breakpoint()
 
     def command_line_sequence(self):
-        for inst in lyric_objects:
-            c = lambda s: s.center((80-len(s)), '=') + '\n\n'
-            print(c('SONG'), inst.song, '\n', inst.student_song_entry)
-            input()
-            print(c('ARTIST'), inst.artist, '\n', inst.student_artist_entry)
-            input()
-            print(c('LYRICS'), inst.lyrics)
-            input()
+        chelp = CommandLineHelper()
 
     def get_regular_lyric_objects(self):
         """
@@ -96,7 +88,6 @@ class ScriptRunner(CsvHandler):
         for index, item in enumerate(self.no_id_found):
             # unpack tuple and track_id
             student_entries, api_info = item
-            print(student_entries)
             empty_lyric_objects.append(LyricObject(student_entries))
 
         return empty_lyric_objects
