@@ -24,7 +24,46 @@ class CsvHandler():
     self.user_data --> list of tuples: (song_title, band/artist_name)
     """
 
-    def __init__(self, csv_path):
+
+
+
+
+
+
+
+
+
+
+
+    # change this
+    # def __init__(self, ***csv_path***):
+
+    # to this
+    def __init__(self, csv_string):
+
+    # csv will probably be read in and passed back as a string from the
+    # front end, since it'll presumably come from the google drive api
+    # if this function is used at all
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         """
         Technically, csv_upload is a path string right now, which will
         probably have to be adjusted in the future.

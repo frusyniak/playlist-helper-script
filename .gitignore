@@ -1,4 +1,4 @@
-main_module/secrets.py
+playlistr_app_logic/secrets.py
 venv
 *.log
 *.db

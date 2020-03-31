@@ -7,14 +7,14 @@ from ._lyric import LyricObject
 from .secrets import Secrets
 
 
-class Driver(CsvHandler):
-    def __init__(self, csv_path):
+class InternalDriver(CsvHandler):
+    def __init__(self, csv_string):
         """
         Note: self.lyrics is a list of lyric objects. There is one
         for each song.
         """
         # business as usual
-        super().__init__(csv_path)
+        super().__init__(csv_string)
         self.secrets = Secrets()
 
 
